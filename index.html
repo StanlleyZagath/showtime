@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Meu Show Time</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg">
+<meta name="theme-color" content="#0f1115">
+<style>
+:root{--bg:#0f1115;--card:#1a1d24;--card2:#232732;--txt:#eef0f4;--mut:#9099a8;--acc:#ffd23f;--ok:#3ecf8e;--bd:#2c3140}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--txt);font:15px/1.4 system-ui,Segoe UI,sans-serif}
+header{position:sticky;top:0;z-index:10;background:var(--bg);border-bottom:1px solid var(--bd);padding:12px 16px}
+.top{display:flex;align-items:center;gap:12px;max-width:1000px;margin:auto;flex-wrap:wrap}
+h1{font-size:20px;margin:0;color:var(--acc)}
+nav{display:flex;gap:4px;margin-left:auto;flex-wrap:wrap}
+nav button{background:none;border:0;color:var(--mut);padding:8px 12px;border-radius:8px;cursor:pointer;font:inherit}
+nav button.on{background:var(--card2);color:var(--txt)}
+main{max-width:1000px;margin:auto;padding:16px}
+input[type=search]{width:100%;padding:12px 14px;border-radius:10px;border:1px solid var(--bd);background:var(--card);color:var(--txt);font:inherit}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-top:14px}
+.poster{background:var(--card);border-radius:10px;overflow:hidden;cursor:pointer;position:relative}
+.poster img,.ph{width:100%;aspect-ratio:2/3;object-fit:cover;display:block;background:var(--card2)}
+.poster .t{padding:8px;font-size:13px}
+.bar{height:4px;background:var(--card2)}.bar i{display:block;height:100%;background:var(--ok)}
+.row{display:flex;gap:12px;background:var(--card);border-radius:10px;padding:10px;margin-bottom:10px;align-items:center}
+.row img,.row .ph{width:56px;aspect-ratio:2/3;border-radius:6px;object-fit:cover;flex:none}
+.row .info{flex:1;min-width:0}.row .info b{display:block}
+.mut{color:var(--mut);font-size:13px}
+.btn{background:var(--acc);color:#111;border:0;border-radius:8px;padding:8px 12px;font:inherit;font-weight:600;cursor:pointer}
+.btn.sec{background:var(--card2);color:var(--txt)}.btn.red{background:#3a1f25;color:#ff8b9a}
+.chk{width:38px;height:38px;border-radius:50%;border:2px solid var(--bd);background:none;color:var(--ok);font-size:18px;cursor:pointer;flex:none}
+.chk.on{background:var(--ok);color:#111;border-color:var(--ok)}
+h2{font-size:16px;margin:22px 0 10px}
+.ep{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--bd)}
+.ep .n{width:46px;color:var(--mut);flex:none}.ep .nm{flex:1;min-width:0}
+.modal{position:fixed;inset:0;background:#000b;z-index:20;overflow:auto;padding:16px}
+.modal>div{max-width:720px;margin:auto;background:var(--card);border-radius:14px;padding:16px}
+.head{display:flex;gap:14px}.head img{width:110px;border-radius:8px;align-self:flex-start}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+.stat{background:var(--card);border-radius:10px;padding:14px}.stat b{font-size:24px;color:var(--acc);display:block}
+.empty{text-align:center;color:var(--mut);padding:40px 0}
+.tag{font-size:11px;background:var(--card2);padding:2px 6px;border-radius:5px;color:var(--mut)}
+</style>
+</head>
+<body>
+<header><div class="top"><h1>📺 Meu Show Time</h1>
+<nav id="nav"></nav></div></header>
+<main id="app"></main>
+<div id="modal"></div>
+<script>
+const API='https://api.tvmaze.com';
+const TABS=[['watch','Assistir'],['shows','Minhas séries'],['cal','Calendário'],['search','Buscar'],['stats','Perfil']];
+let tab='watch';
+let S=load();
+function load(){try{return JSON.parse(localStorage.getItem('showtime')||'{"shows":{}}')}catch(e){return{shows:{}}}}
+function save(){try{localStorage.setItem('showtime',JSON.stringify(S))}catch(e){}}
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const today=()=>new Date().toISOString().slice(0,10);
+const fmt=d=>d?new Date(d+'T12:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'short',year:'numeric'}):'sem data';
+const code=e=>`T${e.season}·E${e.number??'?'}`;
+const aired=e=>e.airdate&&e.airdate<=today();
+
+function slim(sh){return{id:sh.id,name:sh.name,image:sh.image?.medium||'',status:sh.status,network:(sh.network||sh.webChannel||{}).name||'',
+ summary:(sh.summary||'').replace(/<[^>]+>/g,''),
+ episodes:(sh._embedded?.episodes||[]).filter(e=>e.number!=null).map(e=>({id:e.id,season:e.season,number:e.number,name:e.name,airdate:e.airdate}))}}
+async function fetchShow(id){const r=await fetch(`${API}/shows/${id}?embed=episodes`);if(!r.ok)throw 0;return slim(await r.json())}
+async function addShow(id){
+  try{const d=await fetchShow(id);S.shows[id]={...d,watched:{},added:Date.now()};save();render();}
+  catch(e){alert('Não consegui carregar a série. Verifique a internet.')}
+}
+async function refreshAll(){
+  for(const id of Object.keys(S.shows)){
+    try{const d=await fetchShow(id);Object.assign(S.shows[id],d)}catch(e){}
+  }
+  save();render();
+}
+const list=()=>Object.values(S.shows);
+const eps=sh=>sh.episodes;
+const seen=(sh,e)=>!!sh.watched[e.id];
+const nextEp=sh=>eps(sh).find(e=>!seen(sh,e)&&aired(e));
+const prog=sh=>{const a=eps(sh).filter(aired);return a.length?a.filter(e=>seen(sh,e)).length/a.length:0};
+
+function toggle(sid,eid){const sh=S.shows[sid];if(sh.watched[eid])delete sh.watched[eid];else sh.watched[eid]=Date.now();save();render();if($('#modal').innerHTML)openShow(sid,true)}
+function markUpTo(sid,eid){const sh=S.shows[sid];for(const e of eps(sh)){if(aired(e))sh.watched[e.id]=sh.watched[e.id]||Date.now();if(e.id==eid)break}save();render();openShow(sid,true)}
+function remove(sid){if(confirm('Remover esta série?')){delete S.shows[sid];save();closeModal();render()}}
+function closeModal(){$('#modal').innerHTML=''}
+
+function poster(sh,extra=''){return sh.image?`<img src="${esc(sh.image)}" loading="lazy">`:'<div class="ph"></div>'}
+
+function vWatch(){
+  const items=list().map(sh=>({sh,e:nextEp(sh)})).filter(x=>x.e).sort((a,b)=>(b.e.airdate||'').localeCompare(a.e.airdate||''));
+  if(!list().length)return`<div class="empty">Você ainda não segue nenhuma série.<br><br><button class="btn" onclick="go('search')">Buscar séries</button></div>`;
+  if(!items.length)return`<div class="empty">🎉 Tudo em dia! Nenhum episódio pendente.</div>`;
+  return items.map(({sh,e})=>`<div class="row">
+   <div onclick="openShow(${sh.id})" style="cursor:pointer">${poster(sh)}</div>
+   <div class="info" onclick="openShow(${sh.id})" style="cursor:pointer"><b>${esc(sh.name)}</b>
+   <span>${code(e)} — ${esc(e.name)}</span><div class="mut">${fmt(e.airdate)} · faltam ${eps(sh).filter(x=>aired(x)&&!seen(sh,x)).length}</div>
+   <div class="bar" style="margin-top:6px"><i style="width:${prog(sh)*100}%"></i></div></div>
+   <button class="chk" title="Marcar como assistido" onclick="toggle(${sh.id},${e.id})">✓</button></div>`).join('');
+}
+function vShows(){
+  if(!list().length)return`<div class="empty">Nenhuma série ainda.</div>`;
+  return`<div class="grid">${list().sort((a,b)=>a.name.localeCompare(b.name)).map(sh=>`<div class="poster" onclick="openShow(${sh.id})">${poster(sh)}
+  <div class="bar"><i style="width:${prog(sh)*100}%"></i></div><div class="t">${esc(sh.name)}</div></div>`).join('')}</div>`;
+}
+function vCal(){
+  const up=[];list().forEach(sh=>eps(sh).forEach(e=>{if(e.airdate&&e.airdate>=today())up.push({sh,e})}));
+  up.sort((a,b)=>a.e.airdate.localeCompare(b.e.airdate));
+  if(!up.length)return`<div class="empty">Nenhum episódio futuro agendado nas suas séries.</div>`;
+  let last='';return up.slice(0,80).map(({sh,e})=>{const h=e.airdate!==last?`<h2>${fmt(e.airdate)}</h2>`:'';last=e.airdate;
+   return h+`<div class="row" onclick="openShow(${sh.id})" style="cursor:pointer">${poster(sh)}<div class="info"><b>${esc(sh.name)}</b>${code(e)} — ${esc(e.name)}</div></div>`}).join('');
+}
+let results=[],q='';
+function vSearch(){
+  return`<input type="search" id="q" placeholder="Buscar série (ex: Breaking Bad)" value="${esc(q)}" autofocus>
+  <div id="res">${resHtml()}</div>`;
+}
+function resHtml(){
+  if(!results.length)return q?`<div class="empty">Nada encontrado.</div>`:'';
+  return results.map(({show:s})=>{const has=S.shows[s.id];return`<div class="row">${s.image?`<img src="${esc(s.image.medium)}">`:'<div class="ph"></div>'}
+  <div class="info"><b>${esc(s.name)}</b><span class="mut">${esc((s.premiered||'').slice(0,4))} ${esc(s.network?.name||s.webChannel?.name||'')} · ${esc(s.status||'')}</span></div>
+  ${has?'<span class="tag">Seguindo</span>':`<button class="btn" onclick="addShow(${s.id});this.textContent='...'">+ Seguir</button>`}</div>`}).join('');
+}
+let tmr;
+function bindSearch(){const i=$('#q');if(!i)return;i.focus();i.setSelectionRange(99,99);
+ i.oninput=()=>{q=i.value;clearTimeout(tmr);tmr=setTimeout(async()=>{
+  if(q.length<2){results=[];$('#res').innerHTML='';return}
+  try{results=await (await fetch(`${API}/search/shows?q=${encodeURIComponent(q)}`)).json()}catch(e){results=[]}
+  $('#res').innerHTML=resHtml()},350)}}
+function vStats(){
+  let n=0,min=0;const sh=list();
+  sh.forEach(s=>eps(s).forEach(e=>{if(seen(s,e))n++}));
+  const hrs=Math.round(n*45/60);
+  return`<div class="stats"><div class="stat"><b>${sh.length}</b>séries</div><div class="stat"><b>${n}</b>episódios vistos</div>
+  <div class="stat"><b>~${hrs}h</b>assistidas (est. 45 min/ep)</div></div>
+  <h2>Dados</h2><p class="mut">Tudo fica salvo neste navegador. Faça backup de vez em quando.</p>
+  <button class="btn sec" onclick="exportData()">Exportar backup</button>
+  <label class="btn sec" style="display:inline-block">Importar<input type="file" accept=".json" hidden onchange="importData(this)"></label>
+  <button class="btn sec" onclick="refreshAll()">Atualizar episódios</button>`;
+}
+function exportData(){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(S)],{type:'application/json'}));a.download='showtime-backup.json';a.click()}
+function importData(inp){const f=inp.files[0];if(!f)return;f.text().then(t=>{try{const d=JSON.parse(t);if(!d.shows)throw 0;S=d;save();render()}catch(e){alert('Arquivo inválido')}})}
+
+function openShow(id,keep){
+  const sh=S.shows[id];if(!sh)return;
+  const seasons={};eps(sh).forEach(e=>(seasons[e.season]??=[]).push(e));
+  $('#modal').innerHTML=`<div class="modal" onclick="if(event.target===this)closeModal()"><div>
+  <div class="head">${sh.image?`<img src="${esc(sh.image)}">`:''}<div><h2 style="margin:0">${esc(sh.name)}</h2>
+  <div class="mut">${esc(sh.network)} · ${esc(sh.status)}</div><p class="mut">${esc(sh.summary.slice(0,300))}</p>
+  <div class="bar"><i style="width:${prog(sh)*100}%"></i></div></div></div>
+  ${Object.keys(seasons).map(s=>{const l=seasons[s];const all=l.filter(aired).every(e=>seen(sh,e));return`<h2>Temporada ${s} <span class="mut">${l.filter(e=>seen(sh,e)).length}/${l.length}</span></h2>`+
+   l.map(e=>`<div class="ep"><span class="n">E${e.number}</span><span class="nm">${esc(e.name)}<div class="mut">${fmt(e.airdate)}</div></span>
+   ${aired(e)?`<button class="chk ${seen(sh,e)?'on':''}" onclick="toggle(${id},${e.id})" ondblclick="markUpTo(${id},${e.id})" title="Clique: marcar · Duplo clique: marcar tudo até aqui">✓</button>`:'<span class="tag">em breve</span>'}</div>`).join('')}).join('')}
+  <p class="mut">Dica: duplo clique no ✓ marca todos os episódios até aquele.</p>
+  <button class="btn sec" onclick="closeModal()">Fechar</button> <button class="btn red" onclick="remove(${id})">Deixar de seguir</button>
+  </div></div>`;
+}
+function go(t){tab=t;render()}
+function render(){
+  $('#nav').innerHTML=TABS.map(([k,l])=>`<button class="${k===tab?'on':''}" onclick="go('${k}')">${l}</button>`).join('');
+  $('#app').innerHTML=({watch:vWatch,shows:vShows,cal:vCal,search:vSearch,stats:vStats})[tab]();
+  if(tab==='search')bindSearch();
+}
+render();
+if(list().length)refreshAll();
+if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
+</script>
+</body>
+</html>
