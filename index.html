@@ -59,7 +59,7 @@ h2 a{font-size:13px;font-weight:400;color:var(--mut);cursor:pointer}h2 a:hover{c
 .tick{position:absolute;left:6px;top:6px;background:var(--ok);color:#000;font-size:11px;font-weight:700;border-radius:3px;padding:0 5px}
 .rk{position:absolute;left:4px;bottom:-6px;font-size:68px;font-weight:900;line-height:1;color:#000;-webkit-text-stroke:2px #fff;text-shadow:0 0 8px #000;pointer-events:none;z-index:2}
 .rail.rk10 .card{width:170px}
-.wide{width:310px!important;background:var(--card);border-radius:6px;padding:12px;display:flex;gap:12px;align-items:center}
+.wide{align-self:flex-start;width:310px!important;background:var(--card);border-radius:6px;padding:12px;display:flex;gap:12px;align-items:center}
 .wide img{width:62px;border-radius:4px;aspect-ratio:2/3;object-fit:cover;pointer-events:none}
 .wide .i{flex:1;min-width:0}.wide .t{margin:0}.wide .s{display:block}
 .bar{height:4px;background:var(--bd);border-radius:2px;overflow:hidden;margin-top:8px}.bar i{display:block;height:100%;background:var(--acc)}
@@ -101,11 +101,42 @@ input:focus{border-color:#fff}
 .ep{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #2a2a2a}.ep .n{width:34px;color:var(--mut);font-size:14px;flex:none}.ep .nm{flex:1;min-width:0}
 .sea{font-size:18px;font-weight:700;margin:24px 0 4px;display:flex;justify-content:space-between;align-items:center}
 @media(max-width:600px){.mb{padding:4px 18px 22px}.mh h2{padding:0 18px 12px}.hero{min-height:56vh}.ra{display:none}}
+/* celular: barra de abas embaixo */
+.bnav,.more{display:none}
+.mp{position:absolute;left:0;right:0;bottom:0;background:#181818;border-radius:18px 18px 0 0;padding:10px 16px calc(86px + env(safe-area-inset-bottom))}
+.mp button{display:flex;width:100%;align-items:center;gap:12px;background:none;border:0;border-bottom:1px solid #2a2a2a;padding:16px 6px;font-size:18px;text-align:left}
+.mp button:last-child{border-bottom:0}.mp .grab{width:40px;height:4px;border-radius:2px;background:#555;margin:2px auto 8px}
+@media(max-width:700px){
+ nav{display:none}
+ .top{height:54px}
+ .logo{font-size:20px;margin:0}
+ .bnav{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:30;background:rgba(20,20,20,.97);border-top:1px solid #2a2a2a;padding-bottom:env(safe-area-inset-bottom);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+ .bnav button{flex:1;background:none;border:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:58px;padding:6px 0;color:#8c8c8c;font-size:11px}
+ .bnav button.on{color:#fff}
+ .bnav svg{width:25px;height:25px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+ .more.open{display:block;position:fixed;inset:0;z-index:35;background:rgba(0,0,0,.65)}
+ main{padding-top:70px;padding-bottom:calc(92px + env(safe-area-inset-bottom))}
+ .hero{margin-top:-70px;min-height:44vh}
+ .hero .in{padding-bottom:30px}
+ .hero h1{font-size:30px}
+ .modal{padding-bottom:24px}
+ .rail .card{width:118px}.rail.rk10 .card{width:128px}.rk{font-size:52px}
+ .wide{width:270px!important}
+ .grid{grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:16px 6px}
+ .fbar{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin-right:-4%;padding-right:4%;padding-bottom:4px}
+ .fbar::-webkit-scrollbar{display:none}
+ .fbar>*{flex:none}
+ .fbar select,.fbar input{font-size:16px;padding:9px 10px}
+ .fbar input{width:150px;min-width:150px}
+ h2{font-size:18px}
+}
 </style>
 </head>
 <body>
 <header id="hd"><div class="top"><span class="logo">SHOW TIME</span><nav id="nav"></nav></div></header>
 <main id="app"></main>
+<div class="bnav" id="bnav"></div>
+<div class="more" id="more" onclick="if(event.target===this)toggleMore()"></div>
 <div id="modal"></div>
 <script src="firebase-config.js"></script>
 <script>
@@ -187,7 +218,15 @@ function fav(t,id){const k=t+':'+id;if(S.fav[k])delete S.fav[k];else S.fav[k]=Da
 function setMy(t,id,n){const it=t==='tv'?S.shows[id]:S.movies[id];it.my=it.my===n?0:n;save();render()}
 function remove(t,id){if(!confirm('Remover da sua lista?'))return;if(t==='tv')delete S.shows[id];else delete S.movies[id];delete S.fav[t+':'+id];save();closeModal();render()}
 function closeModal(){openRef=null;$('#modal').innerHTML=''}
-function go(t){tab=t;closeModal();render();scrollTo(0,0)}
+function go(t){tab=t;closeModal();$('#more').classList.remove('open');render();scrollTo(0,0)}
+const IC={home:'<path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/>',explore:'<circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/>',shows:'<rect x="3" y="5" width="18" height="13" rx="2"/><path d="M8 21h8"/>',movies:'<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 4v16M17 4v16M3 9h4M3 15h4M17 9h4M17 15h4"/>',search:'<circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/>',more:'<circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/>'};
+const BN=[['home','Início'],['explore','Explorar'],['shows','Séries'],['movies','Filmes'],['search','Buscar']];
+const MORE=[['favs','♥  Favoritos'],['hist','Histórico'],['cal','Calendário'],['me','Perfil e dados']];
+function renderBnav(){
+  $('#bnav').innerHTML=BN.map(([k,l])=>`<button class="${k===tab?'on':''}" onclick="go('${k}')"><svg viewBox="0 0 24 24">${IC[k]}</svg>${l}</button>`).join('')+
+   `<button class="${MORE.some(m=>m[0]===tab)?'on':''}" onclick="toggleMore()"><svg viewBox="0 0 24 24">${IC.more}</svg>Mais</button>`;
+  $('#more').innerHTML=`<div class="mp"><div class="grab"></div>${MORE.map(([k,l])=>`<button onclick="go('${k}')">${l}</button>`).join('')}</div>`}
+function toggleMore(){$('#more').classList.toggle('open')}
 
 /* ---------- peças ---------- */
 const img=u=>u?`<img src="${esc(u)}" loading="lazy" alt="" draggable="false">`:'';
@@ -451,6 +490,7 @@ function drawModal(){if(!openRef)return;const old=$('.modal'),st=old?old.scrollT
 
 function render(){
   $('#nav').innerHTML=TABS.map(([k,l])=>`<button class="${k===tab?'on':''}" onclick="go('${k}')">${l}</button>`).join('');
+  renderBnav();
   const fc=keepFocus(),y=scrollY;
   $('#app').innerHTML=({home:vHome,explore:vExplore,shows:vShows,movies:vMovies,favs:vFavs,hist:vHist,cal:vCal,search:vSearch,me:vMe})[tab]();
   if(tab==='search')bindSearch();
