@@ -36,4 +36,4 @@ Tudo fica salvo no navegador (`localStorage`). Use **Perfil → Exportar backup*
 
 ## Aviso
 
-Projeto pessoal, sem vínculo com TV Time, Netflix, Rotten Tomatoes ou TMDB. Este produto usa a API do TMDB, mas não é endossado nem certificado por ela.
+Projeto pessoal, sem vínculo com TV show Time, Netflix, Rotten Tomatoes ou TMDB. Este produto usa a API do TMDB, mas não é endossado nem certificado por ela.
