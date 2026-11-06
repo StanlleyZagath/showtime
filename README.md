@@ -1,6 +1,32 @@
 # Show Time
-
 App pessoal para acompanhar séries e filmes, com visual inspirado em serviços de streaming. Funciona direto no navegador, instala no celular como app (PWA) e não precisa de servidor.
+
+# Como usar o Show Time
+
+1. Abrir o app
+Acesse https://stanlleyzagath.github.io/showtime/ no navegador do computador ou do celular. Não precisa instalar nada nem criar conta no app.
+
+Para ter o ícone no celular:
+
+Android (Chrome): menu ⋮ → Instalar app.
+iPhone (Safari): botão Compartilhar → Adicionar à Tela de Início.
+2. Colocar a chave do TMDB (grátis)
+A chave é necessária para buscar filmes, usar a aba Explorar e ver elenco e onde assistir. Séries funcionam sem ela.
+
+Crie uma conta em https://www.themoviedb.org/signup.
+Entre em Configurações → API e peça uma chave (escolha o uso pessoal). Copie a Chave da API.
+No app, abra Perfil e cole a chave no campo “TMDB”.
+Opcional: para ver a nota da crítica do Rotten Tomatoes e os Oscars, crie uma chave grátis em https://www.omdbapi.com/apikey.aspx e cole no campo “OMDb”.
+
+3. Não perca seus dados
+Tudo o que você marca (séries, filmes, notas, favoritos) fica salvo só no aparelho e no navegador que você está usando. Se você limpar os dados do navegador, trocar de celular ou desinstalar o app, a lista some, e o celular e o computador não compartilham a lista entre si.
+
+Para se proteger:
+
+Em Perfil → Exportar backup, baixe o arquivo showtime-backup.json de vez em quando e guarde no Google Drive ou no e-mail.
+Para restaurar ou levar a lista para outro aparelho, abra Perfil → Importar e escolha esse arquivo.
+
+
 
 ## O que ele faz
 
