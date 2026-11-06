@@ -50,7 +50,7 @@ Para restaurar ou levar a lista para outro aparelho, abra Perfil → Importar e 
 
 A nota do **público** do Rotten Tomatoes não está disponível em APIs gratuitas. O app mostra o público do TMDB e do IMDb e tem um atalho para a página do título no Rotten Tomatoes.
 
-## Como usar
+## Como cria sua copia 
 
 1. Abra o endereço do app (GitHub Pages) ou rode localmente (veja abaixo).
 2. Em **Perfil**, cole as chaves do TMDB e do OMDb (ficam salvas só no seu aparelho).
